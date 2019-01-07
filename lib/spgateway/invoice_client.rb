@@ -12,20 +12,20 @@ module Spgateway
     include Spgateway::Helpers
 
     INVOICE_ISSUE_API_ENDPOINTS = {
-      test: 'https://cinv.ezpay.com/API/invoice_issue',
-      production: 'https://inv.ezpay.com/API/invoice_issue'
+      test: 'https://cinv.ezpay.com.tw/API/invoice_issue',
+      production: 'https://inv.ezpay.com.tw/API/invoice_issue'
     }.freeze
     INVOICE_INVALID_API_ENDPOINTS = {
-      test: 'https://cinv.ezpay.com/API/invoice_invalid',
-      production: 'https://inv.ezpay.com/API/invoice_invalid'
+      test: 'https://cinv.ezpay.com.tw/API/invoice_invalid',
+      production: 'https://inv.ezpay.com.tw/API/invoice_invalid'
     }.freeze
     ALLOWANCE_ISSUE_API_ENDPOINTS = {
-      test: 'https://cinv.ezpay.com/API/allowance_issue',
-      production: 'https://inv.ezpay.com/API/allowance_issue'
+      test: 'https://cinv.ezpay.com.tw/API/allowance_issue',
+      production: 'https://inv.ezpay.com.tw/API/allowance_issue'
     }.freeze
     INVOICE_SEARCH_API_ENDPOINTS = {
-      test: 'https://cinv.ezpay.com/API/invoice_search',
-      production: 'https://inv.ezpay.com/API/invoice_search'
+      test: 'https://cinv.ezpay.com.tw/API/invoice_search',
+      production: 'https://inv.ezpay.com.tw/API/invoice_search'
     }.freeze
     NEED_CHECK_VALUE_APIS = [
       :query_trade_info # Transaction API
