@@ -81,6 +81,134 @@ module Spgateway
       reslut_hash
     end
 
+    def invoice_invalid(params = {})
+      param_required! params, %i[
+        InvoiceNumber
+        InvalidReason
+      ]
+
+      post_params = {
+        RespondType: 'JSON',
+        Version: '1.0',
+        TimeStamp: Time.now.to_i
+      }.merge!(params)
+
+      post_params.delete_if { |_key, value| value.nil? }
+
+      res = request :invoice_invalid, post_params
+
+      reslut_hash = JSON.parse(res.body)
+      reslut_hash['Result'] = JSON.parse(reslut_hash['Result']) if reslut_hash['Result'].present?
+
+      reslut_hash
+    end
+
+    def allowance_issue(params = {})
+      param_required! params, %i[
+        InvoiceNo
+        MerchantOrderNo
+        ItemName
+        ItemCount
+        ItemUnit
+        ItemPrice
+        ItemAmt
+        ItemTaxAmt
+        TotalAmt
+        BuyerEmail
+        Status
+      ]
+
+      post_params = {
+        RespondType: 'JSON',
+        Version: '1.3',
+        TimeStamp: Time.now.to_i
+      }.merge!(params)
+
+      post_params.delete_if { |_key, value| value.nil? }
+
+      res = request :allowance_issue, post_params
+
+      reslut_hash = JSON.parse(res.body)
+      reslut_hash['Result'] = JSON.parse(reslut_hash['Result']) if reslut_hash['Result'].present?
+
+      reslut_hash
+    end
+
+    def invoice_search_by_merchant_order_no(params = {})
+      param_required! params, %i[
+        MerchantOrderNo
+        TotalAmt
+      ]
+
+      post_params = {
+        RespondType: 'JSON',
+        Version: '1.1',
+        TimeStamp: Time.now.to_i,
+        SearchType: 1
+      }.merge!(params)
+
+      post_params.delete_if { |_key, value| value.nil? }
+
+      res = request :invoice_search, post_params
+
+      reslut_hash = JSON.parse(res.body)
+      reslut_hash['Result'] = JSON.parse(reslut_hash['Result']) if reslut_hash['Result'].present?
+
+      reslut_hash
+    end
+
+    def invoice_search_by_invoice_no(params = {}, offsite: false)
+      param_required! params, %i[
+        InvoiceNumber
+        RandomNum
+      ]
+
+      post_params = {
+        RespondType: 'JSON',
+        Version: '1.1',
+        TimeStamp: Time.now.to_i,
+        SearchType: 0
+      }.merge!(params)
+
+      post_params.delete_if { |_key, value| value.nil? }
+
+      # return only encoded postdata_ content if `offsite` was true
+      return encode_post_data(URI.encode(post_params.map { |key, value| "#{key}=#{value}" }.join('&'))) if offsite
+
+      res = request :invoice_search, post_params
+
+      reslut_hash = JSON.parse(res.body)
+      reslut_hash['Result'] = JSON.parse(reslut_hash['Result']) if reslut_hash['Result'].present?
+
+      reslut_hash
+    end
+
+    def invoice_search_by_invoice_no(params = {}, offsite: false)
+      param_required! params, %i[
+        InvoiceNumber
+        RandomNum
+      ]
+
+      post_params = {
+        RespondType: 'JSON',
+        Version: '1.1',
+        TimeStamp: Time.now.to_i,
+        SearchType: 0
+      }.merge!(params)
+
+      post_params.delete_if { |_key, value| value.nil? }
+
+      # return only encoded postdata_ content if `offsite` was true
+      return encode_post_data(URI.encode(post_params.map { |key, value| "#{key}=#{value}" }.join('&'))) if offsite
+
+      res = request :invoice_search, post_params
+
+      reslut_hash = JSON.parse(res.body)
+      reslut_hash['Result'] = JSON.parse(reslut_hash['Result']) if reslut_hash['Result'].present?
+
+      reslut_hash
+    end
+
     private
 
     def request(type, params = {})
