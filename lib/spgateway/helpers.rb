@@ -17,6 +17,20 @@ module Spgateway
       encrypted.unpack('H*').first
     end
 
+    def decode_aes_data(data)
+      cipher = OpenSSL::Cipher::AES256.new(:CBC)
+      cipher.decrypt
+      cipher.padding = 0
+      cipher.key = @options[:hash_key]
+      cipher.iv = @options[:hash_iv]
+      data = [data].pack('H*')
+      result = cipher.update(data)
+
+      return result if (result[-1] == '}')
+
+      result.gsub(result[-1], '')
+    end
+
     def make_check_value(type, params = {})
       case type
       when :mpg
@@ -28,6 +42,12 @@ module Spgateway
       when :credit_card_period
         check_value_fields = %i[MerchantID MerchantOrderNo PeriodAmt PeriodType TimeStamp]
         padded = "HashKey=#{@options[:hash_key]}&%s&HashIV=#{@options[:hash_iv]}"
+      when :line_pay_refund
+        check_value_fields = %i[]
+        padded = "HashKey=#{@options[:hash_key]}&%s&HashIV=#{@options[:hash_iv]}"
+        padded = padded % params
+
+        return Digest::SHA256.hexdigest(padded).upcase!
       else
         raise UnsupportedType, 'Unsupported API type.'
       end
