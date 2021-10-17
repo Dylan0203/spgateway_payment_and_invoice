@@ -142,7 +142,7 @@ module Spgateway
 
       post_params = {
         RespondType: 'JSON',
-        Version: '1.1',
+        Version: '1.3',
         TimeStamp: Time.now.to_i,
         SearchType: 1
       }.merge!(params)
@@ -165,7 +165,7 @@ module Spgateway
 
       post_params = {
         RespondType: 'JSON',
-        Version: '1.1',
+        Version: '1.3',
         TimeStamp: Time.now.to_i,
         SearchType: 0
       }.merge!(params)
