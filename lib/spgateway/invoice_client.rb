@@ -142,7 +142,7 @@ module Spgateway
 
       post_params = {
         RespondType: 'JSON',
-        Version: '1.1',
+        Version: '1.3',
         TimeStamp: Time.now.to_i,
         SearchType: 1
       }.merge!(params)
@@ -165,33 +165,7 @@ module Spgateway
 
       post_params = {
         RespondType: 'JSON',
-        Version: '1.1',
-        TimeStamp: Time.now.to_i,
-        SearchType: 0
-      }.merge!(params)
-
-      post_params.delete_if { |_key, value| value.nil? }
-
-      # return only encoded postdata_ content if `offsite` was true
-      return encode_post_data(URI.encode(post_params.map { |key, value| "#{key}=#{value}" }.join('&'))) if offsite
-
-      res = request :invoice_search, post_params
-
-      reslut_hash = JSON.parse(res.body)
-      reslut_hash['Result'] = JSON.parse(reslut_hash['Result']) if reslut_hash['Result'].present?
-
-      reslut_hash
-    end
-
-    def invoice_search_by_invoice_no(params = {}, offsite: false)
-      param_required! params, %i[
-        InvoiceNumber
-        RandomNum
-      ]
-
-      post_params = {
-        RespondType: 'JSON',
-        Version: '1.1',
+        Version: '1.3',
         TimeStamp: Time.now.to_i,
         SearchType: 0
       }.merge!(params)
