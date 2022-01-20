@@ -51,7 +51,7 @@ module Spgateway
       res = request :refund, raw_params, skip_encode_params
 
       reslut_hash = JSON.parse(res.body) || {}
-      reslut_hash['VaildTradeInfo'] = make_check_value(:line_pay_refund, reslut_hash['TradeInfo']) == reslut_hash['TradeSha']
+      reslut_hash['ValidTradeInfo'] = make_check_value(:line_pay_refund, reslut_hash['TradeInfo']) == reslut_hash['TradeSha']
 
       return reslut_hash if reslut_hash['TradeInfo'].nil?
 
