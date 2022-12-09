@@ -22,6 +22,10 @@ module Spgateway
       test: 'https://ccore.spgateway.com/API/CreditCard/Cancel',
       production: 'https://core.spgateway.com/API/CreditCard/Cancel'
     }.freeze
+    SUBSCRIPTION_ALTERSTATUS_API_ENDPOINT = {
+      test: 'https://ccore.newebpay.com/MPG/period/AlterStatus',
+      production: 'https://core.newebpay.com/MPG/period/AlterStatus'
+    }.freeze
     NEED_CHECK_VALUE_APIS = [
       :query_trade_info # Transaction API
     ].freeze
@@ -51,6 +55,58 @@ module Spgateway
       }.merge!(params)
 
       generate_params(:mpg, post_params)
+    end
+
+    def generate_period_params(params = {})
+      param_required! params, %i[
+        MerOrderNo
+        ProdDesc
+        PeriodAmt
+        PeriodType
+        PeriodPoint
+        PeriodStartType
+        PeriodTimes
+        ReturnURL
+        PayerEmail
+        NotifyURL
+        BackURL
+      ]
+
+      post_params = {
+        RespondType: 'String',
+        TimeStamp: Time.now.to_i,
+        Version: '1.5'
+      }.merge!(params)
+
+      {
+        MerchantID_: @options[:merchant_id],
+        PostData_: encode_post_data(URI.encode_www_form(post_params))
+      }
+    end
+
+    def decode_period_params(params)
+      decoded_data = decode_aes_data(params)
+
+      Hash[URI.decode_www_form(decoded_data)]
+    end
+
+    def change_subscription_status(params = {}, decode: true)
+      param_required! params, %i[MerOrderNo PeriodNo AlterType]
+
+      post_params = {
+        Version: '1.0',
+        RespondType: 'String',
+        TimeStamp: Time.now.to_i
+      }.merge!(params)
+
+      res = request :change_subscription_status, post_params
+
+      if decode
+        result_data = Hash[URI.decode_www_form(res.body)]['period']
+        decode_period_params(result_data)
+      else
+        Hash[URI.decode_www_form(res.body)]
+      end
     end
 
     def query_trade_info(params = {})
@@ -158,6 +214,8 @@ module Spgateway
         api_url = CREDITCARD_DEAUTHORIZE_API_ENDPOINTS[@options[:mode]]
       when :credit_card_collect_refund
         api_url = CREDITCARD_COLLECT_REFUND_API_ENDPOINTS[@options[:mode]]
+      when :change_subscription_status
+        api_url = SUBSCRIPTION_ALTERSTATUS_API_ENDPOINT[@options[:mode]]
       end
 
       if NEED_CHECK_VALUE_APIS.include?(type)
