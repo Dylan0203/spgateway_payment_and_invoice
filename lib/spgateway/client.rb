@@ -47,7 +47,7 @@ module Spgateway
     end
 
     def generate_mpg_params(params = {})
-      param_required! params, [:MerchantOrderNo, :Amt, :ItemDesc, :Email, :LoginType]
+      param_required! params, %i[MerchantOrderNo Amt ItemDesc Email LoginType]
 
       post_params = {
         RespondType: 'String',
@@ -56,6 +56,26 @@ module Spgateway
       }.merge!(params)
 
       generate_params(:mpg, post_params)
+    end
+
+    def generate_mpg_params_20(params = {})
+      param_required! params, %i[MerchantOrderNo Amt ItemDesc]
+
+      post_params = {
+        MerchantID: @options[:merchant_id],
+        RespondType: 'String',
+        TimeStamp: Time.now.to_i,
+        Version: '2.0'
+      }.merge!(params)
+
+      trade_info = encode_post_data(URI.encode_www_form(post_params))
+
+      {
+        MerchantID: @options[:merchant_id],
+        TradeInfo: trade_info,
+        TradeSha: make_check_value(:mpg20, trade_info),
+        Version: '2.0'
+      }
     end
 
     def generate_period_params(params = {})
