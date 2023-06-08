@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require 'net/http'
 require 'cgi'
 require 'digest'
@@ -22,6 +23,10 @@ module Spgateway
       test: 'https://ccore.spgateway.com/API/CreditCard/Cancel',
       production: 'https://core.spgateway.com/API/CreditCard/Cancel'
     }.freeze
+    SUBSCRIPTION_ALTERSTATUS_API_ENDPOINT = {
+      test: 'https://ccore.newebpay.com/MPG/period/AlterStatus',
+      production: 'https://core.newebpay.com/MPG/period/AlterStatus'
+    }.freeze
     NEED_CHECK_VALUE_APIS = [
       :query_trade_info # Transaction API
     ].freeze
@@ -42,7 +47,7 @@ module Spgateway
     end
 
     def generate_mpg_params(params = {})
-      param_required! params, [:MerchantOrderNo, :Amt, :ItemDesc, :Email, :LoginType]
+      param_required! params, %i[MerchantOrderNo Amt ItemDesc Email LoginType]
 
       post_params = {
         RespondType: 'String',
@@ -53,8 +58,80 @@ module Spgateway
       generate_params(:mpg, post_params)
     end
 
+    def generate_mpg_params_20(params = {})
+      param_required! params, %i[MerchantOrderNo Amt ItemDesc]
+
+      post_params = {
+        MerchantID: @options[:merchant_id],
+        RespondType: 'String',
+        TimeStamp: Time.now.to_i,
+        Version: '2.0'
+      }.merge!(params)
+
+      trade_info = encode_post_data(URI.encode_www_form(post_params))
+
+      {
+        MerchantID: @options[:merchant_id],
+        TradeInfo: trade_info,
+        TradeSha: make_check_value(:mpg20, trade_info),
+        Version: '2.0'
+      }
+    end
+
+    def generate_period_params(params = {})
+      param_required! params, %i[
+        MerOrderNo
+        ProdDesc
+        PeriodAmt
+        PeriodType
+        PeriodPoint
+        PeriodStartType
+        PeriodTimes
+        ReturnURL
+        PayerEmail
+        NotifyURL
+        BackURL
+      ]
+
+      post_params = {
+        RespondType: 'String',
+        TimeStamp: Time.now.to_i,
+        Version: '1.5'
+      }.merge!(params)
+
+      {
+        MerchantID_: @options[:merchant_id],
+        PostData_: encode_post_data(URI.encode_www_form(post_params))
+      }
+    end
+
+    def decode_period_params(params)
+      decoded_data = decode_aes_data(params)
+
+      Hash[URI.decode_www_form(decoded_data)]
+    end
+
+    def change_subscription_status(params = {}, decode: true)
+      param_required! params, %i[MerOrderNo PeriodNo AlterType]
+
+      post_params = {
+        Version: '1.0',
+        RespondType: 'String',
+        TimeStamp: Time.now.to_i
+      }.merge!(params)
+
+      res = request :change_subscription_status, post_params
+
+      if decode
+        result_data = Hash[URI.decode_www_form(res.body)]['period']
+        decode_period_params(result_data)
+      else
+        Hash[URI.decode_www_form(res.body)]
+      end
+    end
+
     def query_trade_info(params = {})
-      param_required! params, [:MerchantOrderNo, :Amt]
+      param_required! params, %i[MerchantOrderNo Amt]
 
       post_params = {
         Version: '1.1',
@@ -67,9 +144,12 @@ module Spgateway
     end
 
     def credit_card_deauthorize(params = {})
-      param_required! params, [:Amt, :IndexType]
+      param_required! params, %i[Amt IndexType]
 
-      raise MissingOption, %(One of the following param is required: MerchantOrderNo, TradeNo) if params[:MerchantOrderNo].nil? && params[:TradeNo].nil?
+      if params[:MerchantOrderNo].nil? && params[:TradeNo].nil?
+        raise MissingOption,
+              %(One of the following param is required: MerchantOrderNo, TradeNo)
+      end
 
       post_params = {
         RespondType: 'String',
@@ -80,11 +160,15 @@ module Spgateway
       post_params.delete_if { |_, value| value.nil? }
 
       res = request :credit_card_deauthorize, post_params
-      Hash[res.body.split('&').map! { |i| URI.decode(i.force_encoding('ASCII-8BIT').force_encoding('UTF-8')).split('=') }]
+      Hash[
+        res.body.split('&').map! do |info|
+          URI.decode(info.force_encoding('ASCII-8BIT').force_encoding('UTF-8')).split('=')
+        end
+      ]
     end
 
     def credit_card_deauthorize_by_merchant_order_no(params = {})
-      param_required! params, [:Amt, :MerchantOrderNo]
+      param_required! params, %i[Amt MerchantOrderNo]
 
       post_params = {
         IndexType: 1
@@ -94,7 +178,7 @@ module Spgateway
     end
 
     def credit_card_deauthorize_by_trade_no(params = {})
-      param_required! params, [:Amt, :TradeNo]
+      param_required! params, %i[Amt TradeNo]
 
       post_params = {
         IndexType: 2
@@ -104,9 +188,12 @@ module Spgateway
     end
 
     def credit_card_collect_refund(params = {})
-      param_required! params, [:Amt, :IndexType, :CloseType]
+      param_required! params, %i[Amt IndexType CloseType]
 
-      raise MissingOption, %(One of the following param is required: MerchantOrderNo, TradeNo) if params[:MerchantOrderNo].nil? && params[:TradeNo].nil?
+      if params[:MerchantOrderNo].nil? && params[:TradeNo].nil?
+        raise MissingOption,
+              %(One of the following param is required: MerchantOrderNo, TradeNo)
+      end
 
       post_params = {
         RespondType: 'String',
@@ -115,11 +202,15 @@ module Spgateway
       }.merge!(params)
 
       res = request :credit_card_collect_refund, post_params
-      Hash[res.body.split('&').map! { |i| URI.decode(i.force_encoding('ASCII-8BIT').force_encoding('UTF-8')).split('=') }]
+      Hash[
+        res.body.split('&').map! do |info|
+          URI.decode(info.force_encoding('ASCII-8BIT').force_encoding('UTF-8')).split('=')
+        end
+      ]
     end
 
     def credit_card_collect_refund_by_merchant_order_no(params = {})
-      param_required! params, [:Amt, :MerchantOrderNo, :CloseType]
+      param_required! params, %i[Amt MerchantOrderNo CloseType]
 
       post_params = {
         IndexType: 1
@@ -129,7 +220,7 @@ module Spgateway
     end
 
     def credit_card_collect_refund_by_trade_no(params = {})
-      param_required! params, [:Amt, :TradeNo, :CloseType]
+      param_required! params, %i[Amt TradeNo CloseType]
 
       post_params = {
         IndexType: 1
@@ -139,7 +230,16 @@ module Spgateway
     end
 
     def generate_credit_card_period_params(params = {})
-      param_required! params, [:MerchantOrderNo, :ProdDesc, :PeriodAmt, :PeriodAmtMode, :PeriodType, :PeriodPoint, :PeriodStartType, :PeriodTimes]
+      param_required! params, %i[
+        MerchantOrderNo
+        ProdDesc
+        PeriodAmt
+        PeriodAmtMode
+        PeriodType
+        PeriodPoint
+        PeriodStartType
+        PeriodTimes
+      ]
 
       generate_params(:credit_card_period, {
         RespondType: 'String',
@@ -158,16 +258,18 @@ module Spgateway
         api_url = CREDITCARD_DEAUTHORIZE_API_ENDPOINTS[@options[:mode]]
       when :credit_card_collect_refund
         api_url = CREDITCARD_COLLECT_REFUND_API_ENDPOINTS[@options[:mode]]
+      when :change_subscription_status
+        api_url = SUBSCRIPTION_ALTERSTATUS_API_ENDPOINT[@options[:mode]]
       end
 
-      if NEED_CHECK_VALUE_APIS.include?(type)
-        post_params = generate_params(type, params)
-      else
-        post_params = {
-          MerchantID_: @options[:merchant_id],
-          PostData_: encode_post_data(URI.encode(params.map { |key, value| "#{key}=#{value}" }.join('&')))
-        }
-      end
+      post_params = if NEED_CHECK_VALUE_APIS.include?(type)
+                      generate_params(type, params)
+                    else
+                      {
+                        MerchantID_: @options[:merchant_id],
+                        PostData_: encode_post_data(URI.encode(params.map { |key, value| "#{key}=#{value}" }.join('&')))
+                      }
+                    end
 
       Net::HTTP.post_form URI(api_url), post_params
     end
