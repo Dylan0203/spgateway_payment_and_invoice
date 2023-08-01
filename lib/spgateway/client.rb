@@ -12,16 +12,16 @@ module Spgateway
     include Spgateway::Helpers
 
     TRANSACTION_API_ENDPOINTS = {
-      test: 'https://ccore.spgateway.com/API/QueryTradeInfo',
-      production: 'https://core.spgateway.com/API/QueryTradeInfo'
+      test: 'https://ccore.newebpay.com/API/QueryTradeInfo',
+      production: 'https://core.newebpay.com/API/QueryTradeInfo'
     }.freeze
     CREDITCARD_COLLECT_REFUND_API_ENDPOINTS = {
-      test: 'https://ccore.spgateway.com/API/CreditCard/Close',
-      production: 'https://core.spgateway.com/API/CreditCard/Close'
+      test: 'https://ccore.newebpay.com/API/CreditCard/Close',
+      production: 'https://core.newebpay.com/API/CreditCard/Close'
     }.freeze
     CREDITCARD_DEAUTHORIZE_API_ENDPOINTS = {
-      test: 'https://ccore.spgateway.com/API/CreditCard/Cancel',
-      production: 'https://core.spgateway.com/API/CreditCard/Cancel'
+      test: 'https://ccore.newebpay.com/API/CreditCard/Cancel',
+      production: 'https://core.newebpay.com/API/CreditCard/Cancel'
     }.freeze
     SUBSCRIPTION_ALTERSTATUS_API_ENDPOINT = {
       test: 'https://ccore.newebpay.com/MPG/period/AlterStatus',
