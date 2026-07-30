@@ -195,7 +195,7 @@ module Spgateway
                     else
                       {
                         MerchantID_: @options[:merchant_id],
-                        PostData_: encode_post_data(URI.encode(params.map { |key, value| "#{key}=#{value}" }.join('&')))
+                        PostData_: encode_post_data(URI.encode_www_form(params))
                       }
                     end
 

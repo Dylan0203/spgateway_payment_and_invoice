@@ -74,7 +74,7 @@ module Spgateway
         api_url = REFUND_API_ENDPOINTS[@options[:mode]]
       end
 
-      trade_info = encode_post_data(URI.encode(params.map { |key, value| "#{key}=#{value}" }.join('&')))
+      trade_info = encode_post_data(URI.encode_www_form(params))
       trade_sha = make_check_value(:line_pay_refund, trade_info)
 
       post_params = {
