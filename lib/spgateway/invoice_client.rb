@@ -173,7 +173,7 @@ module Spgateway
       post_params.delete_if { |_key, value| value.nil? }
 
       # return only encoded postdata_ content if `offsite` was true
-      return encode_post_data(URI.encode(post_params.map { |key, value| "#{key}=#{value}" }.join('&'))) if offsite
+      return encode_post_data(URI.encode_www_form(post_params)) if offsite
 
       res = request :invoice_search, post_params
 
@@ -202,7 +202,7 @@ module Spgateway
       else
         post_params = {
           MerchantID_: @options[:merchant_id],
-          PostData_: encode_post_data(URI.encode(params.map { |key, value| "#{key}=#{value}" }.join('&')))
+          PostData_: encode_post_data(URI.encode_www_form(params))
         }
       end
 
