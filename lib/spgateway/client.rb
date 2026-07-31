@@ -68,7 +68,7 @@ module Spgateway
       }.merge!(params)
 
       res = request :query_trade_info, post_params
-      Hash[res.body.split('&').map! { |i| URI.decode(i).split('=') }]
+      Hash[res.body.split('&').map! { |i| URI::DEFAULT_PARSER.unescape(i).split('=') }]
     end
 
     def credit_card_deauthorize(params = {})
@@ -90,7 +90,7 @@ module Spgateway
       res = request :credit_card_deauthorize, post_params
       Hash[
         res.body.split('&').map! do |info|
-          URI.decode(info.force_encoding('ASCII-8BIT').force_encoding('UTF-8')).split('=')
+          URI::DEFAULT_PARSER.unescape(info.force_encoding('ASCII-8BIT').force_encoding('UTF-8')).split('=')
         end
       ]
     end
@@ -132,7 +132,7 @@ module Spgateway
       res = request :credit_card_collect_refund, post_params
       Hash[
         res.body.split('&').map! do |info|
-          URI.decode(info.force_encoding('ASCII-8BIT').force_encoding('UTF-8')).split('=')
+          URI::DEFAULT_PARSER.unescape(info.force_encoding('ASCII-8BIT').force_encoding('UTF-8')).split('=')
         end
       ]
     end
@@ -195,7 +195,7 @@ module Spgateway
                     else
                       {
                         MerchantID_: @options[:merchant_id],
-                        PostData_: encode_post_data(URI.encode(params.map { |key, value| "#{key}=#{value}" }.join('&')))
+                        PostData_: encode_post_data(URI.encode_www_form(params))
                       }
                     end
 
