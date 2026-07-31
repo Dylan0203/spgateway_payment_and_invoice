@@ -2,6 +2,66 @@
 
 All notable changes to this project are documented in this file.
 
+## 1.0.10 — 2026-07-31
+
+### Fixed
+
+- Replaced the three remaining `URI.decode(...)` call sites in
+  `lib/spgateway/client.rb` with `URI::DEFAULT_PARSER.unescape(...)`:
+  - `:71` — `#query_trade_info`
+  - `:93` — `#credit_card_deauthorize`
+  - `:135` — `#credit_card_collect_refund`
+
+  `URI.decode` was removed in Ruby 3.0 alongside `URI.encode`. 1.0.9 fixed only
+  the *request*-building direction, so on Ruby 3.x these methods completed the
+  HTTP round trip and then raised `NoMethodError` while parsing the **response**.
+  Consumers affected: any caller of `query_trade_info`,
+  `credit_card_deauthorize{,_by_merchant_order_no,_by_trade_no}` and
+  `credit_card_collect_refund{,_by_merchant_order_no,_by_trade_no}`.
+
+  Note that `NEED_CHECK_VALUE_APIS` gates the *request* path only, so
+  `query_trade_info` — the one method that avoids the 1.0.9 encode sites — was
+  **not** exempt from this defect.
+
+### Why `URI::DEFAULT_PARSER.unescape` and not `URI.decode_www_form`
+
+`URI::DEFAULT_PARSER.unescape` is the exact behavioural successor to the removed
+`URI.decode`: it percent-decodes and leaves a literal `+` alone.
+`URI.decode_www_form` / `CGI.unescape` additionally convert `+` to a space:
+
+```ruby
+URI::DEFAULT_PARSER.unescape("a%20b+c")  # => "a b+c"   (what URI.decode did)
+CGI.unescape("a%20b+c")                  # => "a b c"
+```
+
+Strictly, these responses are `application/x-www-form-urlencoded` and `+` ought
+to mean space, so `decode_www_form` is the more spec-correct parser. It is
+deliberately **not** used here: it is a behaviour change on values that flow
+into payment business logic (order numbers, gateway messages), and this release
+exists to close a crash without altering any parsed value. Migrating to
+`decode_www_form` is worth doing as its own change, with its own evidence.
+
+### Verification
+
+Re-verified against the real NewebPay **sandbox** (`ccore.newebpay.com`, mode
+`:test`, `MS`-prefixed sandbox merchant id — never a production host) from a
+consuming Rails application on Ruby 3.4.10, calling the **public** method rather
+than reaching past it:
+
+```
+before (1.0.9): NoMethodError: undefined method 'decode' for module URI
+after:          Hash, Status="SUCCESS", 14 keys
+                (TradeNo, TradeStatus, PaymentType, PayTime, CheckCode, …)
+```
+
+### Correction to the 1.0.9 entry below
+
+The 1.0.9 note says "this gem's own spec suite stubs the HTTP calls". **This gem
+has no test suite** — there is no `spec/` or `test/` directory, and the
+`Rake::TestTask` in the `Rakefile` points at a `test/**/*_test.rb` glob that
+matches nothing. The conclusion it was supporting still stands, and more
+strongly: a sandbox round trip is the only gate this gem has.
+
 ## 1.0.9 — 2026-07-30
 
 ### Fixed
